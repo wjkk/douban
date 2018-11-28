@@ -9,8 +9,8 @@ from scrapy.item import Item, Field
 
 
 class DoubanItem(Item):
-    film_id = Field()
-    title = Field()
+    id = Field()
+    name = Field()
     score = Field()
     num = Field()
     link = Field()
@@ -19,7 +19,12 @@ class DoubanItem(Item):
     screenwriters = Field()
     actors = Field()
     tags = Field()
-    time = Field()
+    publish_time = Field()
     length = Field()
     updated_at = Field()
     created_at = Field()
+    subtitle = Field()
+    detail = Field()
+    longtime = Field()
+    publish_zone = Field()
+    avatar = Field()

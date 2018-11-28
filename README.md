@@ -23,3 +23,6 @@
 
 ## 运行效果
 * * 请参考（资料可导出）：http://www.17pz.top/frontend/web/info/douban-movie/index.html
+
+
+## 补足影片详情、首发日期、国家/地区、封面图

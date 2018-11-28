@@ -92,10 +92,10 @@ ITEM_PIPELINES = {
 # HTTPCACHE_IGNORE_HTTP_CODES = []
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-MYSQL_HOST = ''
-MYSQL_PORT = ''
-MYSQL_DB = ""
-MYSQL_USER = ""
-MYSQL_PASSWORD = ""
+MYSQL_HOST = '127.0.0.1'
+MYSQL_PORT = 3306
+MYSQL_DB = "douban"
+MYSQL_USER = "root"
+MYSQL_PASSWORD = "root"
 MYSQL_TABLE_DOUBAN = "pz_douban_movie"
 MYSQL_CHARSET = 'utf8'

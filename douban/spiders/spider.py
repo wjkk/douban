@@ -110,7 +110,7 @@ class DoubanSpider(Spider):
                     num = 0
                 url = text.xpath('tr/td/a/@href').extract()[0]
                 yield Request(url=url, callback=self.parse_item, meta={"check_director": True, "type": type,
-                                                                       "title": title,
+                                                                       "title": title, "tag" : tag,
                                                                        "score": score, "num": num,
                                                                        "url": url})
         except Exception as e:
@@ -122,7 +122,6 @@ class DoubanSpider(Spider):
         """
         爬取电影信息
         """
-        type = response.meta["type"]
         item = DoubanItem()
         directors = ''
         screenwriters = ''
@@ -133,6 +132,11 @@ class DoubanSpider(Spider):
         time = ''
         length = ''
         alias = ''
+        subtitle = ''
+        detail = ''
+        longtime = ''
+        publish_zone = ''
+        avatar = ''
         try:
             title = response.meta["title"]
             score = response.meta["score"]
@@ -188,19 +192,21 @@ class DoubanSpider(Spider):
                         attr = attr if attr != '' else '/'
                         if prev_attr_name == '类型':
                             tags = attr.split('/', 1)[1]
-                        elif prev_attr_name == '制片国家/地区':
-                            # country = attr.split('/', 1)[1]
-                            print(111)
-                        elif prev_attr_name == '语言':
-                            # language = attr.split('/', 1)[1]
-                            print(222)
+                        #elif prev_attr_name == '制片国家/地区':
+                            # publish_zone = attr.split('/', 1)[1]
+                        #    print(222)
+                        #elif prev_attr_name == '语言':
+                         #   language = attr.split('/', 1)[1]
+                         #    print(222)
                         elif prev_attr_name == '上映日期':
                             time = attr.split('/', 1)[1]
-                        elif prev_attr_name == '片长':
-                            length = attr.split('/', 1)[1]
+                        elif prev_attr_name == '首播':
+                            time = attr.split('/', 1)[1]
+                        #elif prev_attr_name == '片长':
+                        #    language = attr.split('/', 1)[1]
+                        #    print(222)
                         elif prev_attr_name == '又名':
-                            # alias = attr.split('/', 1)[1]
-                            print(333)
+                            # subtitle = attr.split('/', 1)[1]
                             last_attr = True
                         prev_attr_name = temp_attr.split(':', 1)[0]
                         attr = ''
@@ -213,18 +219,41 @@ class DoubanSpider(Spider):
                 if last_attr:
                     break
 
-            item['film_id'] = url.split('/')[-2]
-            item['title'] = title
+            try:
+                publish_zone = hxs.xpath('//*[@id="info"]/span[.//text()[normalize-space(.)="制片国家/地区:"]]/following::text()[1]').extract()[0]
+            except Exception as e:
+                print(e)
+            try:
+                subtitle = hxs.xpath('//*[@id="info"]/span[.//text()[normalize-space(.)="又名:"]]/following::text()[1]').extract()[0]
+            except Exception as e:
+                print(e)
+            try:
+                detail = hxs.xpath('//*[@id="link-report"]/span/text()').extract()[0]
+            except Exception as e:
+                print(e)
+
+            try:
+                avatar = hxs.xpath('//*[@id="mainpic"]/a/img/@src').extract()[0]
+            except Exception as e:
+                print(e)
+
+            item['id'] = url.split('/')[-2]
+            item['name'] = title
             item['score'] = score
             item['num'] = num
             item['link'] = url
-            item['type'] = type
             item['directors'] = directors
             item['screenwriters'] = screenwriters
             item['actors'] = actors
             item['tags'] = tags
-            item['time'] = time
+            item['publish_time'] = time
             item['length'] = length
+            item['subtitle'] = subtitle
+            item['detail'] = detail.strip()
+            item['longtime'] = longtime
+            item['publish_zone'] = publish_zone
+            item['avatar'] = avatar
+            item['type'] = response.meta["tag"]
             yield item
 
         except Exception as e:

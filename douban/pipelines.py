@@ -27,8 +27,8 @@ class DoubanPipeline(object):
             try:
                 # append type
                 sql = "select 1 from `{table}` where {columns} = {values};".format(table=self.table,
-                                                                                        columns='film_id',
-                                                                                        values=item['film_id'])
+                                                                                        columns='id',
+                                                                                        values=item['id'])
                 self.cursor.execute(sql)
                 ret = self.cursor.fetchone()
                 if ret:
