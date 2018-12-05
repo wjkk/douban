@@ -16,6 +16,9 @@ from scrapy.selector import Selector
 from scrapy.spiders import Spider
 from douban.items import DoubanItem
 
+from scrapy.conf import settings
+import pymysql.cursors
+
 domain = 'https://movie.douban.com'
 
 
@@ -46,21 +49,49 @@ class DoubanSpider(Spider):
     name = 'douban_spider'
     website_possible_httpstatus_list = [200]
     # 已经抓取的item不会重新抓取，故把电影和电视剧摆在最前
-    tags = [u'电视剧', u'电影', u'爱情', u'喜剧', u'动画', u'剧情', u'科幻', u'动作', u'经典', u'悬疑', u'青春',
-            u'犯罪', u'惊悚', u'文艺', u'搞笑', u'纪录片', u'励志', u'恐怖', u'战争', u'短片',
-            u'黑色幽默', u'魔幻', u'传记', u'情色', u'感人', u'暴力', u'动画短片', u'家庭', u'音乐',
-            u'童年', u'浪漫', u'黑帮', u'女性', u'同志', u'史诗', u'童话', u'烂片', u'cult', u'脱口秀']
+    tags = [u'综艺', u'动漫', u'纪录片', u'短片', u'同性', u'歌舞', u'历史', u'西部', u'奇幻', u'冒险',
+            u'灾难', u'武侠', u'电视剧', u'电影', u'爱情', u'喜剧', u'动画', u'剧情', u'科幻', u'动作',
+            u'经典', u'悬疑', u'青春', u'犯罪', u'惊悚', u'文艺', u'搞笑', u'纪录片', u'励志', u'恐怖',
+            u'战争', u'短片', u'黑色幽默', u'魔幻', u'传记', u'情色', u'感人', u'暴力', u'动画短片',
+            u'家庭', u'音乐', u'童年', u'浪漫', u'黑帮', u'女性', u'同志', u'史诗', u'童话',
+            u'烂片', u'cult', u'脱口秀']
+
     # tags = [u'电视剧', u'电影']
 
+    def __init__(self):
+        host = settings['MYSQL_HOST']
+        port = settings['MYSQL_PORT']
+        db = settings['MYSQL_DB']
+        user = settings['MYSQL_USER']
+        password = settings['MYSQL_PASSWORD']
+        charset = settings['MYSQL_CHARSET']
+        self.conn = pymysql.connect(host=host, port=port, user=user, password=password, db=db, charset=charset)
+        self.cursor = self.conn.cursor()
+        self.table = settings['MYSQL_TABLE_DOUBAN']
+
     def start_requests(self):
-        """
-        爬取标签列表页信息
-        """
-        tags = self.tags
-        for tag in tags:
-            url = complete_url("/tag/{}".format(urllib.request.quote(tag)))
-            print("start_requests")
-            yield Request(url=url, callback=self.parse_page, meta={"tag": tag, "check_total": True})
+        while(True):
+            # append type
+            sql = "select * from `{table}` where get_detail = 0 order by id DESC LIMIT 10000;".format(table=self.table)
+            self.cursor.execute(sql)
+            rows = self.cursor.fetchall()
+            if rows:
+                for row in rows:
+                    url = 'https://movie.douban.com/subject/' + str(row[0]) + '/'
+                    try:
+                        yield Request(url=url, callback=self.parse_item, meta={"check_director": True, "type": row[6],
+                                                                   "title": row[1], "tag" : row[20],
+                                                                   "score": row[3], "num": row[4],
+                                                                   "url": url})
+                    except Exception as e:
+                        print(e)
+                        continue
+
+
+            else:
+                break
+
+
 
     def parse_page(self, response):
         print("parse_page")
@@ -82,12 +113,7 @@ class DoubanSpider(Spider):
         爬取电影链接
         """
         tag = response.meta["tag"]
-        type = 0
-        # 若“电视剧”、“电影”存在于类型字符串，设定类型
-        if tag == "电影":
-            type = 1
-        elif tag == "电视剧":
-            type = 2
+
         try:
             hxs = Selector(response)
             texts = hxs.xpath('//div[contains(@class,"grid-16-8 clearfix")]/div[1]/div[2]/table')
@@ -109,13 +135,25 @@ class DoubanSpider(Spider):
                 else:
                     num = 0
                 url = text.xpath('tr/td/a/@href').extract()[0]
-                yield Request(url=url, callback=self.parse_item, meta={"check_director": True, "type": type,
-                                                                       "title": title, "tag" : tag,
-                                                                       "score": score, "num": num,
-                                                                       "url": url})
+
+                item = DoubanItem()
+                item['id'] = url.split('/')[-2]
+                item['name'] = title
+                item['score'] = score
+                item['num'] = num
+                item['link'] = url
+                item['type'] = tag
+                item['tag'] = tag
+                yield item
+
+                #yield Request(url=url, callback=self.parse_item, meta={"check_director": True, "type": type,
+                #                                                       "title": title, "tag" : tag,
+                #                                                       "score": score, "num": num,
+                #                                                       "url": url})
         except Exception as e:
             print(e)
             pass
+
 
     def parse_item(self, response):
         print("parse_item")
@@ -237,6 +275,7 @@ class DoubanSpider(Spider):
             except Exception as e:
                 print(e)
 
+
             item['id'] = url.split('/')[-2]
             item['name'] = title
             item['score'] = score
@@ -254,6 +293,8 @@ class DoubanSpider(Spider):
             item['publish_zone'] = publish_zone
             item['avatar'] = avatar
             item['type'] = response.meta["tag"]
+            item['tag'] = response.meta["tag"]
+            item['get_detail'] = 1
             yield item
 
         except Exception as e:

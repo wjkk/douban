@@ -19,6 +19,7 @@ class DoubanItem(Item):
     screenwriters = Field()
     actors = Field()
     tags = Field()
+    tag = Field()
     publish_time = Field()
     length = Field()
     updated_at = Field()
@@ -28,3 +29,4 @@ class DoubanItem(Item):
     longtime = Field()
     publish_zone = Field()
     avatar = Field()
+    get_detail = Field()
